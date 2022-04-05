@@ -10,7 +10,6 @@ import pandas as pd
 from os import walk
 import glob
 
-MAX_NUMBER = 1
 path_html_sites = "../data/html-sites/*"
 PATH_TO_SAVE_AT = "../data/parsed/parsed-data.csv"
 
@@ -27,7 +26,6 @@ def iterate_files():
     for file_path in filenames:
         get_channel(file_path)
     
-## second function being called from iterate_channels()
 
 def get_channel(file_path):
     
@@ -173,35 +171,7 @@ def get_messages(page):
     df_bubbles_data.to_csv(PATH_TO_SAVE_AT, mode = "a", header = False)
     # print("iiiiiiiiiiiiiii")
 
-def get_page_link(page, base_page):
-    base_page = re.sub(r"[\\?]before.*$", "", base_page)
-    # print(base_page)
-    message_nr = [] 
-    bubbles = page.find_all("div", {"class":"tgme_widget_message_wrap js-widget_message_wrap"})
-    for bubble in bubbles:
-        message_nr_raw = bubble.find("div", {"class": "tgme_widget_message"})["data-post"]
-        message_nr_cleaned = int(re.findall(r"\d{1,}$", message_nr_raw)[0])
-        message_nr.append(message_nr_cleaned)
-
-    # print("xxxxxxxxxxxxxxx")
-    oldest_message_index = min(message_nr)
-    # print("oldest message scraped: " + str(oldest_message_index))
-
-    if oldest_message_index > MAX_NUMBER:
-        new_link = base_page + "?before=" + str(oldest_message_index)
-    else:
-        new_link = None
-    
-    print(new_link)
-    return (new_link)
-
 def get_server_response(link):
-    # init_page = requests.get(link)
-    # init_page.raise_for_status()
-    # # if status_code == 500:
-    # #     sleep(10)
-    # #     get_server_response(link)
-    # init_page = init_page.text.encode("utf-8")
     with open(link) as fp:
         contents = fp.read()
         page = BeautifulSoup(contents, "lxml")
