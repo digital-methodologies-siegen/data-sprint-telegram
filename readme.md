@@ -24,13 +24,11 @@ notwendige packages installieren mit:
 Daten werden direkt in den Ordner `../data/raw/` gespeichert. 
 Gewährleisten, dass der Ordner existiert!
 
-## Bekannte Schwachstellen
+## Schwachstelle
 
-- Scraper sollten nur Daten ziehen, nicht gleich noch Daten parsen (extrahieren). Besser wäre dieser Scraper speichert html-Seiten, die von einem neuen Script ausgelesen werden
-
-- Es kommt vor, dass der Scraper bricht, weil der Server zu lange braucht zu anworten. Das zu manuell zu fixen ist einfach:
--- Auf der Console wird ausgegeben, bei welchen Link der Fehler auftrat
--- Diesen Link kopieren
--- channels.csv duplizieren und neuen Namen geben
--- channels.csv öffnen, Kanäle, die schon fertig gescrapt sind löschen, Link aus der Konsole bei der Person einfügen, bei der der Fehler auftrat
--- Script erneut starten
+Es kommt vor, dass der Scraper bricht, weil der Server zu lange braucht zu anworten. Das zu manuell zu fixen ist einfach:
+- Auf der Console wird ausgegeben, bei welchen Link der Fehler auftrat
+- Diesen Link kopieren
+- channels.csv duplizieren und neuen Namen geben
+- channels.csv öffnen, Kanäle, die schon fertig gescrapt sind löschen, Link aus der Konsole bei der Person einfügen, bei der der Fehler auftrat
+- Script erneut starten
