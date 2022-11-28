@@ -9,174 +9,112 @@ import lxml
 import pandas as pd
 from os import walk
 import glob
+import pathlib
 
-path_html_sites = "../data/html-sites/*"
-PATH_TO_SAVE_AT = "../data/parsed/parsed-data.csv"
+path_html_sites = "../data/"
+PATH_TO_SAVE_AT = "../data/parsed"
+NAME_TO_SAVE = "parsed-data.csv"
 
 ### first function to be called:
 
 def iterate_files():
 
     # init the dataframe column names, it's getting filled later on with data 
-    df_init = pd.DataFrame({"message_nr": [], "message_views": [], "message_sent": [], "message_text": [], "message_fwd_from_name": [], "message_fwd_from_link": [], "message_link_preview": [], "prev_link_site": [], "prev_link_title": [], "prev_link_description": [], "prev_link_image": [], "message_photo_link" : [], "message_video" : [], "message_round_video": [], "message_video_link" :[]})
-    # storing the empty dataframe
-    df_init.to_csv(PATH_TO_SAVE_AT, mode = "w")
+    df_init = pd.DataFrame({"message_nr": [], "message_user": [], "message_sent": [], "message_reply_to_nr": [], "message_text": [], "message_has_photo": [], "message_photo_link": [], "message_has_video": [], "message_video_link" :[], "parsed_file": []})
 
-    filenames = glob.glob(path_html_sites)
-    for file_path in filenames:
-        get_channel(file_path)
+    pathlib.Path(PATH_TO_SAVE_AT).mkdir(parents=True, exist_ok=True)
+
+    df_init.to_csv(PATH_TO_SAVE_AT + "/" + NAME_TO_SAVE, mode = "w")
     
+    for html_file in pathlib.Path(path_html_sites).rglob('*.html'):
+        print(html_file)
+        get_channel(html_file)
+   
 
 def get_channel(file_path):
     
-    file_name_raw = file_path.split("/")
-    file_name_raw = file_name_raw[len(file_name_raw)-1]
-    file_name = re.sub(r"-before.*$", "", file_name_raw)
-
     page = get_server_response(file_path)
-    print("xxxxxxxxxxxxx " + file_path)
+    print("xxxxxxxxxxxxx " + str(file_path))
+    # print(page)
 
-    get_messages(page)
-  
-
-def get_messages(page):
     bubble_data = []
-    bubbles = page.find_all("div", {"class":"tgme_widget_message_wrap js-widget_message_wrap"})
-    
+    bubbles = page.find_all("div", {"class":"message default clearfix"})
+    # print(bubbles)
     message_nr=[]
+    message_user=[]
     message_text = []
-    message_views = []
+    # message_views = []
     message_sent = []
-    message_fwd_from_name = []
-    message_fwd_from_link = []
-    message_link_preview = []
-    message_round_video = []
-    message_video = []
+    message_reply_to_nr = []
+    # message_fwd_from_name = []
+    # message_fwd_from_link = []
+    # message_link_preview = []
+    # message_round_video = []
+    message_has_video = []
+    # message_video = []
     message_video_link = []
-    prev_link_site = []
-    prev_link_title = []
-    prev_link_description = []
-    prev_link_image = []
+    # prev_link_site = []
+    # prev_link_title = []
+    # prev_link_description = []
+    # prev_link_image = []
+    message_has_photo = []
     message_photo_link = []
+    parsed_file = []
+
+    
 
     for bubble in bubbles:
+        
+        parsed_file.append(file_path)
 
-        message_nr_raw = bubble.find("div", {"class": "tgme_widget_message"})["data-post"]
-        message_nr_cleaned = re.findall(r"\d{1,}$", message_nr_raw)[0]
-        # print((message_nr_cleaned))
-        message_nr.append(message_nr_cleaned)
-        message_sent.append(bubble.find("a", {"class": "tgme_widget_message_date"}).find("time", {"class": "time"})["datetime"])
+        message_nr_raw = bubble["id"]
+        message_nr.append(re.findall(r"\d{1,}$", message_nr_raw)[0])
+        body = bubble.find("div", {"class": "body"})
+
+        # print(re.findall(r"\d{1,}$", message_nr_raw)[0])
+        message_sent.append(body.find("div", {"class": "pull_right date details"})["title"])
+        message_user.append(body.find("div", {"class": "from_name"}).text)
         
-        has_views_attr = bubble.find("span", {"class": "tgme_widget_message_views"})
-        if has_views_attr != None:
-            message_views.append(has_views_attr.text)
-        else:
-            message_views.append("NA")
-        
-        
-        has_text = bubble.find("div", {"class": "tgme_widget_message_text js-message_text"})
+        has_text = bubble.find("div", {"class": "text"})
         if has_text != None:
             message_text.append(has_text.text)
         else:
             message_text.append("NA")
 
-        is_forwarded = bubble.find("span", {"class": "tgme_widget_message_forwarded_from_name"})
-        is_forwarded_linked = bubble.find("a", {"class": "tgme_widget_message_forwarded_from_name"})
-        if(is_forwarded != None or is_forwarded_linked != None):
-            if is_forwarded != None:
-                message_fwd_from_name.append(is_forwarded.string)
-                message_fwd_from_link.append("NA")
-
-            if(is_forwarded_linked != None):
-                message_fwd_from_name.append(is_forwarded_linked.string)
-                message_fwd_from_link.append(is_forwarded_linked["href"])
+        is_answer = body.find("div", {"class": "reply_to details"})
+        if is_answer != None:
+            link = is_answer.find("a")["href"]
+            message_reply_to_nr.append(re.findall(r"\d{1,}$", link)[0])
         else:
-            message_fwd_from_name.append("NA")
-            message_fwd_from_link.append("NA")
-
-        photo_linked = bubble.find("a", {"class" : "tgme_widget_message_photo_wrap"})
+            message_reply_to_nr.append("NA")
+            
+        photo_linked = bubble.find("a", {"class" : "photo_wrap"})
         if photo_linked != None:
-            raw_link = photo_linked["style"]
-            link_cleaned = re.findall(r"https.*jpg", raw_link)[0]
-            message_photo_link.append(link_cleaned)
+            message_photo_link.append(photo_linked["href"])
+            message_has_photo.append("TRUE")
         else:
             message_photo_link.append("NA")
+            message_has_photo.append("FALSE")
 
-        is_round_video_message = bubble.find("div", {"class": "tgme_widget_message_roundvideo_wrap"})
-        if is_round_video_message != None:
-            message_round_video.append("TRUE")
-        else:
-            message_round_video.append("FALSE")
-
-        contains_video = bubble.find("a", {"class": "tgme_widget_message_video_player"})
+        contains_video = bubble.find("a", {"class": "video_file_wrap"})
         if contains_video != None:
-            message_video.append("TRUE")
-        else:
-            message_video.append("FALSE")
-
-        contains_embedded_video = bubble.find("video", {"class" : "tgme_widget_message_video"})
-        if contains_embedded_video != None:
-            # raw_link = 
-            # link_cleaned = re.findall()
-            message_video_link.append(contains_embedded_video["src"])
+            message_video_link.append(contains_video["href"])
+            message_has_video.append("TRUE")
         else:
             message_video_link.append("NA")
+            message_has_video.append("FALSE")
 
-
-        prev_available = bubble.find("a", {"class": "tgme_widget_message_link_preview"})
-        if(prev_available != None):
-            message_link_preview.append(prev_available["href"])
-            
-            # prev_link_site.append("NA")
-            # prev_link_title.append("NA")
-            # prev_link_description.append("NA")
-            # prev_link_image.append("NA")
-
-            link_site = prev_available.find("div", {"class": "link_preview_site_name accent_color"})
-            if (link_site != None):
-                prev_link_site.append(link_site.text)
-            else:
-                prev_link_site.append("NA")
-
-            link_title = prev_available.find("div", {"class": "link_preview_title"})
-            if link_title != None:
-                prev_link_title.append(link_title.text)
-            else: 
-                prev_link_title.append("NA")
-
-            link_description = prev_available.find("div", {"class": "link_preview_description"})
-            if link_description != None:
-                prev_link_description.append(link_description.text)
-            else:
-                prev_link_description.append("NA")
-
-            link_image = prev_available.find("i")
-            if link_image != None:
-                raw_link = link_image["style"].strip("background-image:url('")
-                cleaned_link = raw_link.strip("')")
-                prev_link_image.append(cleaned_link)
-            else:
-                prev_link_image.append("NA")
-
-        else:
-            message_link_preview.append("NA")
-            prev_link_site.append("NA")
-            prev_link_title.append("NA")
-            prev_link_description.append("NA")
-            prev_link_image.append("NA")
-
-    bubble_data = {"message_nr": message_nr, "message_views": message_views, "message_sent": message_sent, "message_text": message_text, "message_fwd_from_name": message_fwd_from_name, "message_fwd_from_link": message_fwd_from_link, "message_link_preview": message_link_preview, "prev_link_site": prev_link_site, "prev_link_title": prev_link_title, "prev_link_description": prev_link_description, "prev_link_image": prev_link_image, "message_photo_link" : message_photo_link, "message_video" : message_video, "message_round_video": message_round_video, "message_video_link" :message_video_link}
+    # bubble_data = {"message_nr": message_nr, "message_user": message_user, "message_sent": message_sent, "message_text": message_text, "message_fwd_from_name": message_fwd_from_name, "message_fwd_from_link": message_fwd_from_link, "message_link_preview": message_link_preview, "prev_link_site": prev_link_site, "prev_link_title": prev_link_title, "prev_link_description": prev_link_description, "prev_link_image": prev_link_image, "message_photo_link" : message_photo_link, "message_video" : message_video, "message_round_video": message_round_video, "message_video_link" :message_video_link}
+    bubble_data = {"message_nr": message_nr, "message_user": message_user, "message_sent": message_sent, "message_reply_to_nr": message_reply_to_nr, "message_text": message_text, "message_has_photo": message_has_photo, "message_photo_link": message_photo_link, "message_has_video": message_has_video, "message_video_link" :message_video_link, "parsed_file": parsed_file}
     df_bubbles_data = pd.DataFrame(data = bubble_data)  
     # print(path_to_save_at)
-    df_bubbles_data.to_csv(PATH_TO_SAVE_AT, mode = "a", header = False)
-    # print("iiiiiiiiiiiiiii")
+    df_bubbles_data.to_csv(PATH_TO_SAVE_AT + "/" + NAME_TO_SAVE, mode = "a", header = False)
 
 def get_server_response(link):
     with open(link) as fp:
         contents = fp.read()
         page = BeautifulSoup(contents, "lxml")
 
-    # page = BeautifulSoup(link, "lxml")
     page.prettify() 
     return page
 

@@ -1,10 +1,13 @@
-# Scraper für Telegram-Kanäle
+# Parser für Telegram-Kanäle
 
 ## Beschreibung
 
-Dieser Scraper holt auf Basis eines Links alle Beiträge aus einem öffentlichen Telegram-Kanal. 
+Für den Daten-Sprint im Dezember 2022 wurde über die Telegram-Benutzeroberfläche Content aus zahlreichen Kanälen und Channels heruntergeladen. Diese Daten stehen über die Veranstalter:innen zur Verfügung. 
 
-Es können mehrere Kanäle gescrapt werden. Welche das sein sollen, ist in der channels.csv hinterlegt.
+Das Script `parsing-channels.py` extrahiert aus den vorliegenden html-Seiten die zentralen Datenpunkte und speichert sie in einer csv-Datei.
+
+Dieses Repo ist ein fork von https://github.com/SFB1472/tdp-telegram-channel-scraper
+
 
 ## Benutzung
 
@@ -19,16 +22,7 @@ Virtuel Environment starten mit:
 notwendige packages installieren mit:
 `pip install -r requirements.txt`
 
-`python scraper-channels.py` ausführen
+Daten von den Veranstalter:innen in einem Ordner `data` auf gleicher Ebene wie der Ordner `scraping` ablegen und entpacken.
 
-Daten werden direkt in den Ordner `../data/raw/` gespeichert. 
-Gewährleisten, dass der Ordner existiert!
+`python parsing-channels.py` ausführen
 
-## Schwachstelle
-
-Es kommt vor, dass der Scraper bricht, weil der Server zu lange braucht zu anworten. Das zu manuell zu fixen ist einfach:
-- Auf der Console wird ausgegeben, bei welchen Link der Fehler auftrat
-- Diesen Link kopieren
-- channels.csv duplizieren und neuen Namen geben
-- channels.csv öffnen, Kanäle, die schon fertig gescrapt sind löschen, Link aus der Konsole bei der Person einfügen, bei der der Fehler auftrat
-- Script erneut starten
